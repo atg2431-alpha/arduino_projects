@@ -1,0 +1,49 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_BMP085.h>
+#include <Adafruit_Sensor.h>
+
+Adafruit_MPU6050 mpu;
+Adafruit_BMP085 bmp;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) delay(10); 
+
+  Serial.println("GY-87 Test Protocol Starting...");
+
+  // Initialize MPU6050
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+  }
+
+  // Initialize BMP180
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP085/180 sensor!");
+  }
+  
+  Serial.println("Sensors Ready!");
+}
+
+void loop() {
+  /* Get new sensor events with the readings */
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // 1. Acceleration (m/s^2)
+  Serial.print("Accel X: "); Serial.print(a.acceleration.x);
+  Serial.print(", Y: "); Serial.print(a.acceleration.y);
+  Serial.print(", Z: "); Serial.println(a.acceleration.z);
+
+  // 2. Gyroscope (rad/s)
+  Serial.print("Rotation X: "); Serial.print(g.gyro.x);
+  Serial.print(", Y: "); Serial.print(g.gyro.y);
+  Serial.print(", Z: "); Serial.println(g.gyro.z);
+
+  // 3. Altitude (Meters)
+  Serial.print("Pressure: "); Serial.print(bmp.readPressure()); Serial.print(" Pa");
+  Serial.print(" | Approx Altitude: "); Serial.print(bmp.readAltitude()); Serial.println(" m");
+
+  Serial.println("----------------------------------------------");
+  delay(500);
+}
