@@ -1,0 +1,38 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_BMP085.h>
+
+Adafruit_MPU6050 mpu;
+Adafruit_BMP085 bmp;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  // Manually wake up MPU6050 in case the library fails
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6B); // PWR_MGMT_1 register
+  Wire.write(0);    // set to zero (wakes up the MPU-6050)
+  Wire.endTransmission(true);
+
+  if (!mpu.begin()) {
+    Serial.println("MPU6050 initialization failed!");
+  }
+  if (!bmp.begin()) {
+    Serial.println("BMP180 initialization failed!");
+  }
+  
+  Serial.println("Systems Check: OK. Streaming Data...");
+}
+
+void loop() {
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  Serial.print("Accel X:"); Serial.print(a.acceleration.x);
+  Serial.print(" | Gyro Y:"); Serial.print(g.gyro.y);
+  Serial.print(" | Alt:"); Serial.print(bmp.readAltitude());
+  Serial.println(" m");
+
+  delay(200);
+}
