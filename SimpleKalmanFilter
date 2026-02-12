@@ -1,0 +1,63 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_BMP085.h>
+#include <SimpleKalmanFilter.h>
+
+// Initialize Sensors
+Adafruit_MPU6050 mpu;
+Adafruit_BMP085 bmp;
+
+/*
+  SimpleKalmanFilter(e_mea, e_est, q)
+  e_mea: Measurement Uncertainty - How much the sensor oscillates (try 1 to 5)
+  e_est: Estimation Uncertainty - Usually same as e_mea
+  q: Process Noise - How fast the altitude actually changes (0.01 is good for slow movement)
+*/
+SimpleKalmanFilter altitudeFilter(2, 2, 0.01);
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  // Manually wake up MPU6050 (Power Management 1 register)
+  Wire.beginTransmission(0x68);
+  Wire.write(0x6B); 
+  Wire.write(0);    
+  Wire.endTransmission(true);
+
+  if (!mpu.begin()) {
+    Serial.println("MPU6050 initialization failed!");
+  }
+  if (!bmp.begin()) {
+    Serial.println("BMP180 initialization failed!");
+  }
+  
+  Serial.println("Systems Check: OK. Streaming Data...");
+  Serial.println("Raw_Alt,Filtered_Alt,Accel_X,Gyro_Y"); // Header for Serial Plotter
+}
+
+void loop() {
+  // 1. Get MPU6050 Data
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // 2. Get BMP180 Data
+  float rawAltitude = bmp.readAltitude();
+
+  // 3. Apply Kalman Filter
+  float estimatedAltitude = altitudeFilter.updateEstimate(rawAltitude);
+
+  // 4. Output Data
+  // Format for Serial Plotter: Raw vs Filtered
+  Serial.print(rawAltitude);
+  Serial.print(",");
+  Serial.print(estimatedAltitude);
+  
+  // Optional: Print other sensor data
+  Serial.print(",");
+  Serial.print(a.acceleration.x);
+  Serial.print(",");
+  Serial.println(g.gyro.y);
+
+  delay(50); // Reduced delay for smoother filtering
+}
